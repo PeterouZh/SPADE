@@ -12,6 +12,8 @@ import models
 import data
 import pickle
 
+from template_lib.v2.config import update_parser_defaults_from_yaml
+
 
 class BaseOptions():
     def __init__(self):
@@ -95,6 +97,8 @@ class BaseOptions():
         # The previous default options will be overwritten
         if opt.load_from_opt_file:
             parser = self.update_options_from_file(parser, opt)
+
+        update_parser_defaults_from_yaml(parser)
 
         opt = parser.parse_args()
         self.parser = parser
