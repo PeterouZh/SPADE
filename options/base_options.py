@@ -12,7 +12,8 @@ import models
 import data
 import pickle
 
-from template_lib.v2.config import update_parser_defaults_from_yaml
+# from template_lib.v2.config import update_parser_defaults_from_yaml
+from template_lib.v2.config_cfgnode import update_parser_defaults_from_yaml
 
 
 class BaseOptions():

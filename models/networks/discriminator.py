@@ -39,6 +39,9 @@ class MultiscaleDiscriminator(BaseNetwork):
         subarch = opt.netD_subarch
         if subarch == 'n_layer':
             netD = NLayerDiscriminator(opt)
+        elif subarch == 'conv_d':
+            from exp.spade.net_discriminator import ConvDiscriminator
+            netD = ConvDiscriminator(opt)
         else:
             raise ValueError('unrecognized discriminator subarchitecture %s' % subarch)
         return netD

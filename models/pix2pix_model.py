@@ -142,7 +142,7 @@ class Pix2PixModel(torch.nn.Module):
             input_semantics, fake_image, real_image)
 
         G_losses['GAN'] = self.criterionGAN(pred_fake, True,
-                                            for_discriminator=False)
+                                            for_discriminator=False, input_semantics=input_semantics)
 
         if not self.opt.no_ganFeat_loss:
             num_D = len(pred_fake)
@@ -173,9 +173,9 @@ class Pix2PixModel(torch.nn.Module):
             input_semantics, fake_image, real_image)
 
         D_losses['D_Fake'] = self.criterionGAN(pred_fake, False,
-                                               for_discriminator=True)
+                                               for_discriminator=True, input_semantics=input_semantics)
         D_losses['D_real'] = self.criterionGAN(pred_real, True,
-                                               for_discriminator=True)
+                                               for_discriminator=True, input_semantics=input_semantics)
 
         return D_losses
 

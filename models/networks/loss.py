@@ -33,6 +33,12 @@ class GANLoss(nn.Module):
             pass
         elif gan_mode == 'hinge':
             pass
+        elif gan_mode == 'conv_d':
+            from exp.spade.unified_loss import ConvUnifiedLoss, downsampling
+            from template_lib.v2.config_cfgnode import global_cfg
+            self.d_loss = ConvUnifiedLoss()
+            self.downsample = downsampling
+            self.out_channel = global_cfg.D_cfg.get('out_channel')
         else:
             raise ValueError('Unexpected gan_mode {}'.format(gan_mode))
 
@@ -54,7 +60,7 @@ class GANLoss(nn.Module):
             self.zero_tensor.requires_grad_(False)
         return self.zero_tensor.expand_as(input)
 
-    def loss(self, input, target_is_real, for_discriminator=True):
+    def loss(self, input, target_is_real, for_discriminator=True, **kwargs):
         if self.gan_mode == 'original':  # cross entropy loss
             target_tensor = self.get_target_tensor(input, target_is_real)
             loss = F.binary_cross_entropy_with_logits(input, target_tensor)
@@ -74,6 +80,28 @@ class GANLoss(nn.Module):
                 assert target_is_real, "The generator's hinge loss must be aiming for real"
                 loss = -torch.mean(input)
             return loss
+        elif self.gan_mode == 'conv_d':
+            input_semantics = kwargs['input_semantics']
+            input_semantics = self.downsample(input_semantics, size=input.shape[-2:])
+            _, labels = input_semantics.topk(k=1, dim=1)
+            labels = labels.squeeze(1)
+            if for_discriminator:
+                if target_is_real:
+                    D_real_positive = [labels, self.out_channel - 2]
+                    D_real_negative = (self.out_channel - 1, )
+                    loss = self.d_loss(pred=input, positive=D_real_positive, negative=D_real_negative)
+                else:
+                    D_fake_positive = (self.out_channel - 1, )
+                    D_fake_negative = (labels, self.out_channel - 2)
+                    loss = self.d_loss(pred=input, positive=D_fake_positive, negative=D_fake_negative)
+            else:
+                assert target_is_real, "The generator's hinge loss must be aiming for real"
+                G_positive = (labels, self.out_channel - 2)
+                G_negative = (self.out_channel - 1, )
+                loss = self.d_loss(pred=input, positive=G_positive, negative=G_negative)
+
+                # loss = -torch.mean(input)
+            return loss
         else:
             # wgan
             if target_is_real:
@@ -81,7 +109,7 @@ class GANLoss(nn.Module):
             else:
                 return input.mean()
 
-    def __call__(self, input, target_is_real, for_discriminator=True):
+    def __call__(self, input, target_is_real, for_discriminator=True, **kwargs):
         # computing loss is a bit complicated because |input| may not be
         # a tensor, but list of tensors in case of multiscale discriminator
         if isinstance(input, list):
@@ -89,7 +117,7 @@ class GANLoss(nn.Module):
             for pred_i in input:
                 if isinstance(pred_i, list):
                     pred_i = pred_i[-1]
-                loss_tensor = self.loss(pred_i, target_is_real, for_discriminator)
+                loss_tensor = self.loss(pred_i, target_is_real, for_discriminator, **kwargs)
                 bs = 1 if len(loss_tensor.size()) == 0 else loss_tensor.size(0)
                 new_loss = torch.mean(loss_tensor.view(bs, -1), dim=1)
                 loss += new_loss
