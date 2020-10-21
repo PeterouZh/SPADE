@@ -36,6 +36,7 @@ class GANLoss(nn.Module):
         elif gan_mode == 'conv_d':
             from exp.spade.unified_loss import ConvUnifiedLoss, downsampling
             from template_lib.v2.config_cfgnode import global_cfg
+            self.unified_loss = global_cfg.unified_loss
             self.d_loss = ConvUnifiedLoss()
             self.downsample = downsampling
             self.out_channel = global_cfg.D_cfg.get('out_channel')
@@ -88,19 +89,30 @@ class GANLoss(nn.Module):
             if for_discriminator:
                 if target_is_real:
                     D_real_positive = [labels, self.out_channel - 2]
-                    D_real_negative = (self.out_channel - 1, )
-                    loss = self.d_loss(pred=input, positive=D_real_positive, negative=D_real_negative)
+                    if self.unified_loss.mode.lower() == "only_p":
+                        loss = self.d_loss(pred=input, positive=D_real_positive, default_label=-1)
+                    elif self.unified_loss.mode.lower() == "p_and_n":
+                        loss = self.d_loss(pred=input, positive=D_real_positive, default_label=0)
+                    else:
+                        assert 0
                 else:
                     D_fake_positive = (self.out_channel - 1, )
-                    D_fake_negative = (labels, self.out_channel - 2)
-                    loss = self.d_loss(pred=input, positive=D_fake_positive, negative=D_fake_negative)
+                    if self.unified_loss.mode.lower() == "only_p":
+                        loss = self.d_loss(pred=input, positive=D_fake_positive, default_label=-1)
+                    elif self.unified_loss.mode.lower() == "p_and_n":
+                        loss = self.d_loss(pred=input, positive=D_fake_positive, default_label=0)
+                    else:
+                        assert 0
             else:
                 assert target_is_real, "The generator's hinge loss must be aiming for real"
                 G_positive = (labels, self.out_channel - 2)
-                G_negative = (self.out_channel - 1, )
-                loss = self.d_loss(pred=input, positive=G_positive, negative=G_negative)
-
-                # loss = -torch.mean(input)
+                if self.unified_loss.mode.lower() == "only_p":
+                    loss = self.d_loss(pred=input, positive=G_positive, default_label=-1)
+                elif self.unified_loss.mode.lower() == "p_and_n":
+                    # G_negative = (self.out_channel - 1, )
+                    loss = self.d_loss(pred=input, positive=G_positive, default_label=0)
+                else:
+                    assert 0
             return loss
         else:
             # wgan
