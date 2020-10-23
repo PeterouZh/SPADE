@@ -25,6 +25,9 @@ class Pix2PixModel(torch.nn.Module):
             else torch.ByteTensor
 
         self.netG, self.netD, self.netE = self.initialize_networks(opt)
+        self.models = {'netG': self.netG,
+                       'netD': self.netD,
+                       'netE': self.netE}
 
         # set loss functions
         if opt.isTrain:

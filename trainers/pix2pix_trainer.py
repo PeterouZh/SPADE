@@ -30,6 +30,16 @@ class Pix2PixTrainer():
                 self.pix2pix_model_on_one_gpu.create_optimizers(opt)
             self.old_lr = opt.lr
 
+    def get_saved_model_and_optimizer(self):
+        from template_lib.d2template.trainer import DumpModule
+
+        models = self.pix2pix_model_on_one_gpu.models
+        saved_model = DumpModule(models)
+
+        saved_optim = {'optimizer_G': self.optimizer_G,
+                       'optimizer_D': self.optimizer_D}
+        return saved_model, saved_optim
+
     def run_generator_one_step(self, data):
         self.optimizer_G.zero_grad()
         g_losses, generated = self.pix2pix_model(data, mode='generator')
