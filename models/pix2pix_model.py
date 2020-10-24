@@ -8,6 +8,7 @@ import models.networks as networks
 import util.util as util
 
 from template_lib.v2.config_cfgnode import global_cfg
+from template_lib.d2template.trainer import DumpModule
 
 
 class Pix2PixModel(torch.nn.Module):
@@ -16,7 +17,7 @@ class Pix2PixModel(torch.nn.Module):
         networks.modify_commandline_options(parser, is_train)
         return parser
 
-    def __init__(self, opt):
+    def __init__(self, opt, load_weights=True):
         super().__init__()
         self.opt = opt
         self.FloatTensor = torch.cuda.FloatTensor if self.use_gpu() \
@@ -24,7 +25,7 @@ class Pix2PixModel(torch.nn.Module):
         self.ByteTensor = torch.cuda.ByteTensor if self.use_gpu() \
             else torch.ByteTensor
 
-        self.netG, self.netD, self.netE = self.initialize_networks(opt)
+        self.netG, self.netD, self.netE = self.initialize_networks(opt, load_weights=load_weights)
         self.models = {'netG': self.netG,
                        'netD': self.netD,
                        'netE': self.netE}
@@ -38,6 +39,10 @@ class Pix2PixModel(torch.nn.Module):
                 self.criterionVGG = networks.VGGLoss(self.opt.gpu_ids)
             if opt.use_vae:
                 self.KLDLoss = networks.KLDLoss()
+
+    def get_checkpoint_model(self):
+        saved_model = DumpModule(self.models)
+        return saved_model
 
     # Entry point for all calls involving forward pass
     # of deep networks. We used this approach since DataParallel module
@@ -92,12 +97,12 @@ class Pix2PixModel(torch.nn.Module):
     # Private helper methods
     ############################################################################
 
-    def initialize_networks(self, opt):
+    def initialize_networks(self, opt, load_weights=True):
         netG = networks.define_G(opt)
         netD = networks.define_D(opt) if opt.isTrain else None
         netE = networks.define_E(opt) if opt.use_vae else None
 
-        if not opt.isTrain or opt.continue_train:
+        if (not opt.isTrain or opt.continue_train) and load_weights:
             netG = util.load_network(netG, 'G', opt.which_epoch, opt)
             if opt.isTrain:
                 netD = util.load_network(netD, 'D', opt.which_epoch, opt)
