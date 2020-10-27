@@ -83,7 +83,7 @@ class Pix2PixModel(torch.nn.Module):
             G_lr, D_lr = opt.lr / 2, opt.lr * 2
 
         optimizer_G = torch.optim.Adam(G_params, lr=G_lr, betas=(beta1, beta2))
-        optimizer_D = torch.optim.Adam(D_params, lr=D_lr, betas=(beta1, beta2), **global_cfg.D_optim_cfg)
+        optimizer_D = torch.optim.Adam(D_params, lr=D_lr, betas=(beta1, beta2), **global_cfg.get('D_optim_cfg', {}))
 
         return optimizer_G, optimizer_D
 
