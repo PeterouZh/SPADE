@@ -10,6 +10,7 @@ from argparse import Namespace
 import numpy as np
 from PIL import Image
 import os
+import logging
 import argparse
 import dill as pickle
 import util.coco
@@ -204,6 +205,7 @@ def load_network(net, label, epoch, opt):
     save_filename = '%s_net_%s.pth' % (epoch, label)
     save_dir = os.path.join(opt.checkpoints_dir, opt.name)
     save_path = os.path.join(save_dir, save_filename)
+    logging.getLogger('tl').info(f'Loading weights: {save_path}')
     weights = torch.load(save_path)
     net.load_state_dict(weights)
     return net
