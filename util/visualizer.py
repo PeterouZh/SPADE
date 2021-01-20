@@ -136,12 +136,13 @@ class Visualizer():
         return visuals
 
     # save image to the disk
-    def save_images(self, webpage, visuals, image_path):        
+    def save_images(self, webpage, visuals, image_path, name=None):
         visuals = self.convert_visuals_to_numpy(visuals)        
         
         image_dir = webpage.get_image_dir()
-        short_path = ntpath.basename(image_path[0])
-        name = os.path.splitext(short_path)[0]
+        if name is None:
+            short_path = ntpath.basename(image_path[0])
+            name = os.path.splitext(short_path)[0]
 
         webpage.add_header(name)
         ims = []
