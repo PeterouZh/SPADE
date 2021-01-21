@@ -31,10 +31,10 @@ class Pix2PixTrainer():
             self.old_lr = opt.lr
 
     def get_saved_model_and_optimizer(self):
-        from template_lib.d2template.trainer import DumpModule
+        # from template_lib.d2template.trainer import DumpModule
 
-        models = self.pix2pix_model_on_one_gpu.models
-        saved_model = DumpModule(models)
+        saved_model = self.pix2pix_model_on_one_gpu.models
+        # saved_model = DumpModule(models)
 
         saved_optim = {'optimizer_G': self.optimizer_G,
                        'optimizer_D': self.optimizer_D}
